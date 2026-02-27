@@ -16,13 +16,17 @@ app.use("/api/links", linksRouter);
 
 /* Redirect 
 Hot path - cache-first, then db fallback */
-app.get("/:slug", (req, res) => {
+app.get("/:slug", async (req, res) => {
   const { slug } = req.params;
 
   let link = cache.get(slug);
 
   if (!link) {
-    link = db.prepare("SELECT * FROM links where slug = ?").get(slug);
+    const result = await db.execute({
+      sql: "SELECT * FROM links where slug = ?",
+      args: [slug],
+    });
+    link = result.rows[0] ?? null;
     if (link) cache.set(slug, link);
   }
 
@@ -47,7 +51,6 @@ app.use((req, res) => {
 function shutdown(signal) {
   console.log(`\n[smol.dev] ${signal} received. flushing writes and closing..`);
   writeBuffer.flush();
-  db.close();
   process.exit(0);
 }
 

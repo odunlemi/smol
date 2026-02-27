@@ -29,18 +29,24 @@ function buildLink(slug, original_url, ip) {
   const expiresAt = new Date(now.getTime() + env.LINK_TTL_MS);
   return {
     slug,
-    original_url: original_url,
+    original_url,
     creator_ip: ip,
     created_at: now.toISOString(),
     expires_at: expiresAt.toISOString(),
   };
 }
 
+async function slugExists(slug) {
+  const result = await db.execute({
+    sql: "SELECT slug FROM links WHERE slug = ?",
+    args: [slug],
+  });
+  return result.rows.length > 0;
+}
+
 /* POST /api/links  
 For the ui */
-router.post("/", rateLimit, (req, res) => {
-  console.log("POST/api/links hit", req.body);
-
+router.post("/", rateLimit, async (req, res) => {
   const { url, custom_slug } = req.body;
 
   if (!url || typeof url !== "string") {
@@ -72,10 +78,7 @@ router.post("/", rateLimit, (req, res) => {
         .json({ error: "Slug may only contain letters, numbers, - and _." });
     }
 
-    const existing = db
-      .prepare("SELECT slug FROM links WHERE slug = ?")
-      .get(slug);
-    if (existing) {
+    if (await(slugExists(slug))) {
       return res
         .status(409)
         .json({ error: "That custom slug is already taken." });
@@ -91,7 +94,7 @@ router.post("/", rateLimit, (req, res) => {
           .status(500)
           .json({ error: "Could not generate a unique slug. Try again." });
       }
-    } while (db.prepare("SELECT slug FROM links WHERE slug = ?").get(slug));
+    } while (await slugExists(slug));
   }
 
   const link = buildLink(slug, url, req.ip);
@@ -111,7 +114,7 @@ router.post("/", rateLimit, (req, res) => {
 
 /* GET /api/links/:slug 
     Metadata */
-router.get("/:slug", (req, res) => {
+router.get("/:slug", async (req, res) => {
   const { slug } = req.params;
 
   let link = cache.get(slug);
