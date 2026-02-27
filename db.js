@@ -1,9 +1,13 @@
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import { env } from "./config.js";
 
-const db = new Database(env.DB_PATH);
+const db = createClient({
+    url: env.TURSO_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
+});
 
-db.exec(`
+/* Create table and indexes on startup */
+await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS links (
     slug TEXT PRIMARY KEY,
     original_url TEXT NOT NULL,
