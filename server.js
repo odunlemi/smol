@@ -5,11 +5,15 @@ import { cache } from "./cache.js";
 import { writeBuffer } from "./writeBuffer.js";
 import linksRouter from "./routes/links.js";
 import { env } from "./config.js";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.set("trust proxy", 1);
 app.use(express.json());
+app.use("/site", express.static(join(__dirname, "site")));
 
 /* Api for the ui */
 app.use("/api/links", linksRouter);
