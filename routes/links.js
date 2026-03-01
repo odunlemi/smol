@@ -120,7 +120,11 @@ router.get("/:slug", async (req, res) => {
   let link = cache.get(slug);
 
   if (!link) {
-    link = db.prepare("SELECT * FROM links WHERE slug = ?").get(slug);
+    const result = await db.execute({
+      sql: "SELECT * FROM links WHERE slug = ?",
+      args: [slug],
+    });
+    link = result.rows[0] ?? null;
     if (link) cache.set(slug, link);
   }
 
