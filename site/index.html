@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Smol — Make your urls smaller</title>
+	<link rel="stylesheet" href="style.css">
+	<script src="script.js" defer></script>
+</head>
+
+<body>
+
+	<!-- doodles -->
+	<span class="doodle">🔗</span>
+	<span class="doodle">✂️</span>
+	<span class="doodle">📎</span>
+	<span class="doodle">🚀</span>
+	<span class="doodle">⚡</span>
+	<span class="doodle">🎯</span>
+	<span class="doodle">🧵</span>
+	<span class="doodle">📮</span>
+	<span class="doodle">💌</span>
+	<span class="doodle">🔖</span>
+
+	<main>
+		<h1 class="wordmark">smol</h1>
+		<p class="tagline">// make your urls smaller</p>
+
+		<div class="card">
+			<div class="input-row">
+				<input type="url" id="urlInput" placeholder="https://your-very-long-url.com/goes/here"
+					autocomplete="off" />
+				<button class="btn-shorten" id="shortenBtn">Smolify</button>
+			</div>
+
+			<div class="slug-row">
+				<span class="slug-label">Custom</span>
+				<div class="slug-input-wrap">
+					<span class="slug-prefix">smol.dev/</span>
+					<input type="text" id="slugInput" placeholder="my-alias (optional)" maxlength="50"
+						autocomplete="off" />
+				</div>
+			</div>
+
+			<div class="status" id="status"></div>
+		</div>
+	</main>
+
+	<!-- <footer>
+		built with ☕ &nbsp;·&nbsp; <a href="https://github.com/odunlemi/smol" target="_blank">source</a>
+	</footer> -->
+
+	<div class="overlay" id="overlay">
+		<div class="warning-box">
+			<span class="warning-emoji">⚠️</span>
+			<div class="warning-title">You're leaving smol.dev</div>
+			<div class="warning-dest" id="warningDest"></div>
+			<div class="countdown-ring">
+				<svg viewBox="0 0 72 72" width="72" height="72">
+					<circle class="countdown-track" cx="36" cy="36" r="30" />
+					<circle class="countdown-fill" id="countdownCircle" cx="36" cy="36" r="30" stroke-dasharray="188.5"
+						stroke-dashoffset="0" />
+				</svg>
+				<div class="countdown-number" id="countdownNumber">5</div>
+			</div>
+			<div class="warning-actions">
+				<button class="btn-cancel" id="cancelBtn">Cancel</button>
+				<button class="btn-go" id="goBtn">Go now →</button>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>
