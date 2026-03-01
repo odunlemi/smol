@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaving smol…</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="warning-box">
+        <span class="warning-emoji">⚠️</span>
+        <div class="warning-title">You're leaving smol</div>
+        <div class="warning-dest" id="dest"></div>
+
+        <div class="countdown-ring">
+            <svg viewBox="0 0 72 72" width="72" height="72">
+                <circle class="countdown-track" cx="36" cy="36" r="30" />
+                <circle class="countdown-fill" id="fill" cx="36" cy="36" r="30" stroke-dasharray="188.5"
+                    stroke-dashoffset="0" />
+            </svg>
+            <div class="countdown-number" id="num">5</div>
+        </div>
+
+        <div class="warning-actions">
+            <a class="btn-cancel" href="/">Cancel</a>
+            <button class="btn-go" onclick="go()">Go now →</button>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const DEST = params.get('dest');
+
+        // If no dest param, go home
+        if (!DEST) window.location.href = '/';
+
+        const display = DEST.length > 60 ? DEST.slice(0, 60) + '…' : DEST;
+        document.getElementById('dest').textContent = display;
+
+        const CIRC = 188.5;
+        const fill = document.getElementById('fill');
+        const num = document.getElementById('num');
+        let remaining = 5;
+
+        const timer = setInterval(() => {
+            remaining--;
+            num.textContent = remaining;
+            fill.style.strokeDashoffset = CIRC * (1 - remaining / 5);
+            if (remaining <= 0) { clearInterval(timer); go(); }
+        }, 1000);
+
+        function go() {
+            clearInterval(timer);
+            window.location.href = DEST;
+        }
+    </script>
+</body>
+
+</html>

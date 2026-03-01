@@ -50,7 +50,8 @@ app.get("/:slug", async (req, res) => {
     return res.status(404).json({ error: "Link has expired." });
   }
 
-  return res.redirect(302, link.original_url);
+  const dest = encodeURIComponent(link.original_url);
+  return res.redirect(302, `/site/redirect.html?dest=${dest}`);
 });
 
 /* 404 catch-all */
