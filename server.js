@@ -14,6 +14,13 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(express.json());
 app.use("/site", express.static(join(__dirname, "site")));
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
 /* Api for the ui */
 app.use("/api/links", linksRouter);
