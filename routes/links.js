@@ -44,8 +44,7 @@ async function slugExists(slug) {
   return result.rows.length > 0;
 }
 
-/* POST /api/links  
-For the ui */
+/* POST /api/links */
 router.post("/", rateLimit, async (req, res) => {
   const { url, custom_slug } = req.body;
 
@@ -54,7 +53,7 @@ router.post("/", rateLimit, async (req, res) => {
   }
 
   if (Buffer.byteLength(url, "utf8") > 3072) {
-    return res.status(400).json({ error: "URL exceeds 3kb limit." }); // Extra functional requirement
+    return res.status(400).json({ error: "URL exceeds 3 KB limit." });
   }
 
   if (!isValidUrl(url)) {
@@ -69,7 +68,7 @@ router.post("/", rateLimit, async (req, res) => {
     if (Buffer.byteLength(slug, "utf8") > 307) {
       return res
         .status(400)
-        .json({ error: "Custom slug exceeds 0.3kb limit." });
+        .json({ error: "Custom slug exceeds 300-byte limit." });
     }
 
     if (!SLUG_RE.test(slug)) {
@@ -78,13 +77,12 @@ router.post("/", rateLimit, async (req, res) => {
         .json({ error: "Slug may only contain letters, numbers, - and _." });
     }
 
-    if (await(slugExists(slug))) {
+    if (await slugExists(slug)) {
       return res
         .status(409)
         .json({ error: "That custom slug is already taken." });
     }
   } else {
-    // Generate a new random slug
     let attempts = 0;
     do {
       slug = nanoid(8);
@@ -99,9 +97,14 @@ router.post("/", rateLimit, async (req, res) => {
 
   const link = buildLink(slug, url, req.ip);
 
-  /* Warm the cache immediately so the redirects work before the buffer flushes */
+  /* Warm cache immediately so redirects work before the DB write completes */
   cache.set(slug, link);
+
+  /* Buffer the write, then flush right away.
+     On serverless (Vercel) the process may exit before the interval fires,
+     so we must flush synchronously in the same request lifecycle. */
   writeBuffer.add(link);
+  await writeBuffer.flush();
 
   return res.status(201).json({
     slug: link.slug,
@@ -112,8 +115,7 @@ router.post("/", rateLimit, async (req, res) => {
   });
 });
 
-/* GET /api/links/:slug 
-    Metadata */
+/* GET /api/links/:slug — metadata only, no redirect */
 router.get("/:slug", async (req, res) => {
   const { slug } = req.params;
 
