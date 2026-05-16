@@ -46,10 +46,12 @@ app.get("/:slug", async (req, res) => {
   }
 
   if (!link) {
+    /* Try to serve a custom 404 page; fall back to JSON if the file is missing */
     return res
       .status(404)
-      .sendFile(join(__dirname, "site", "404.html"))
-      .catch(() => res.status(404).json({ error: "Link not found." }));
+      .sendFile(join(__dirname, "site", "404.html"), (err) => {
+        if (err) res.status(404).json({ error: "Link not found." });
+      });
   }
 
   if (link.expires_at && new Date(link.expires_at) < new Date()) {
