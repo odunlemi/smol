@@ -69,7 +69,7 @@ app.use((req, res) => {
   res.status(404).json({ error: "Not found." });
 });
 
-/* Graceful shutdown */
+/* Graceful shutdown (long-running process only) */
 function shutdown(signal) {
   console.log(`\n[smol] ${signal} — flushing writes and closing..`);
   writeBuffer.flush().finally(() => process.exit(0));
@@ -78,6 +78,13 @@ function shutdown(signal) {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-app.listen(env.PORT, () => {
-  console.log(`[smol] Running on ${env.BASE_URL}`);
-});
+/* Export the app for Vercel's serverless runtime (@vercel/node v3+
+   expects a default-exported handler — app.listen() is ignored there) */
+export default app;
+
+/* Local development only */
+if (!process.env.VERCEL) {
+  app.listen(env.PORT, () => {
+    console.log(`[smol] Running on ${env.BASE_URL}`);
+  });
+}
