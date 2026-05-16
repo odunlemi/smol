@@ -13,7 +13,8 @@ const app = express();
 
 app.set("trust proxy", 1);
 app.use(express.json());
-app.use("/site", express.static(join(__dirname, "site")));
+
+/* CORS — needed for cross-origin callers (e.g. GitHub Pages → Vercel) */
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -22,11 +23,14 @@ app.use((req, res, next) => {
   next();
 });
 
-/* Api for the ui */
+/* API */
 app.use("/api/links", linksRouter);
 
-/* Redirect 
-Hot path - cache-first, then db fallback */
+/* Static — serve site/ at root so / serves index.html, /style.css, etc. */
+app.use(express.static(join(__dirname, "site")));
+
+/* Redirect — hot path: cache-first, then DB fallback
+   Must come AFTER static so file routes win over slug lookup */
 app.get("/:slug", async (req, res) => {
   const { slug } = req.params;
 
@@ -34,7 +38,7 @@ app.get("/:slug", async (req, res) => {
 
   if (!link) {
     const result = await db.execute({
-      sql: "SELECT * FROM links where slug = ?",
+      sql: "SELECT * FROM links WHERE slug = ?",
       args: [slug],
     });
     link = result.rows[0] ?? null;
@@ -42,7 +46,10 @@ app.get("/:slug", async (req, res) => {
   }
 
   if (!link) {
-    return res.status(404).json({ error: "Link not found." });
+    return res
+      .status(404)
+      .sendFile(join(__dirname, "site", "404.html"))
+      .catch(() => res.status(404).json({ error: "Link not found." }));
   }
 
   if (link.expires_at && new Date(link.expires_at) < new Date()) {
@@ -50,8 +57,9 @@ app.get("/:slug", async (req, res) => {
     return res.status(404).json({ error: "Link has expired." });
   }
 
+  /* Redirect to the warning page — /redirect.html now that static is at root */
   const dest = encodeURIComponent(link.original_url);
-  return res.redirect(302, `/site/redirect.html?dest=${dest}`);
+  return res.redirect(302, `/redirect.html?dest=${dest}`);
 });
 
 /* 404 catch-all */
@@ -61,15 +69,13 @@ app.use((req, res) => {
 
 /* Graceful shutdown */
 function shutdown(signal) {
-  console.log(`\n[smol.dev] ${signal} received. flushing writes and closing..`);
-  writeBuffer.flush();
-  process.exit(0);
+  console.log(`\n[smol] ${signal} — flushing writes and closing..`);
+  writeBuffer.flush().finally(() => process.exit(0));
 }
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-/* Start */
 app.listen(env.PORT, () => {
-  console.log(`[smol.dev] Running on ${env.BASE_URL}`);
+  console.log(`[smol] Running on ${env.BASE_URL}`);
 });
