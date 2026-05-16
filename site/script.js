@@ -1,5 +1,7 @@
-const API = "https://smol-six.vercel.app";
+/* Relative URL — works on any origin (local dev or Vercel) */
+const API = "";
 const COUNTDOWN = 5;
+const CIRC = 144.5; // 2π × 23
 
 const urlInput = document.getElementById("urlInput");
 const slugInput = document.getElementById("slugInput");
@@ -12,9 +14,10 @@ const circle = document.getElementById("countdownCircle");
 const cancelBtn = document.getElementById("cancelBtn");
 const goBtn = document.getElementById("goBtn");
 
-const CIRCUMFERENCE = 188.5; // 2π × 30
 let countdownTimer = null;
 let redirectUrl = null;
+
+/* ── Status helpers ── */
 
 function showStatus(type, html) {
   statusEl.className = `status ${type}`;
@@ -26,7 +29,8 @@ function clearStatus() {
   statusEl.innerHTML = "";
 }
 
-// Shorten
+/* ── Shorten ── */
+
 shortenBtn.addEventListener("click", shorten);
 urlInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") shorten();
@@ -43,7 +47,7 @@ async function shorten() {
   }
 
   shortenBtn.disabled = true;
-  shortenBtn.textContent = "Smolifying…";
+  shortenBtn.textContent = "Shortening…";
 
   try {
     const body = { url };
@@ -72,10 +76,10 @@ async function shorten() {
     showStatus(
       "success",
       `
-      <div class="result-url">
-        <a class="result-link" href="#" data-href="${data.original_url}"
-           onclick="triggerWarning(event, this)">${short}</a>
-        <button class="btn-copy" onclick="copyLink('${short}', this)">Copy</button>
+      <div class="result-row">
+        <a class="result-link" href="#" data-href="${escapeAttr(data.original_url)}"
+           onclick="triggerWarning(event, this)">${escapeHtml(short)}</a>
+        <button class="btn-copy" onclick="copyLink('${escapeAttr(short)}', this)">Copy</button>
       </div>
       <div class="result-meta">expires ${expires}</div>
     `,
@@ -83,15 +87,16 @@ async function shorten() {
 
     urlInput.value = "";
     slugInput.value = "";
-  } catch (err) {
+  } catch {
     showStatus("error", "Network error. Please try again.");
   } finally {
     shortenBtn.disabled = false;
-    shortenBtn.textContent = "Smolify";
+    shortenBtn.textContent = "Shorten";
   }
 }
 
-// Copy
+/* ── Copy ── */
+
 function copyLink(url, btn) {
   navigator.clipboard.writeText(url).then(() => {
     btn.textContent = "Copied!";
@@ -99,11 +104,14 @@ function copyLink(url, btn) {
   });
 }
 
-// Exit warning
+/* ── Exit warning ── */
+
 function triggerWarning(e, el) {
   e.preventDefault();
   redirectUrl = el.dataset.href;
-  warningDest.textContent = redirectUrl;
+  const display =
+    redirectUrl.length > 70 ? redirectUrl.slice(0, 70) + "…" : redirectUrl;
+  warningDest.textContent = display;
   startCountdown();
   overlay.classList.add("active");
 }
@@ -116,9 +124,7 @@ function startCountdown() {
   countdownTimer = setInterval(() => {
     remaining--;
     countdownEl.textContent = remaining;
-    const offset = CIRCUMFERENCE * (1 - remaining / COUNTDOWN);
-    circle.style.strokeDashoffset = offset;
-
+    circle.style.strokeDashoffset = CIRC * (1 - remaining / COUNTDOWN);
     if (remaining <= 0) {
       clearInterval(countdownTimer);
       doRedirect();
@@ -128,7 +134,7 @@ function startCountdown() {
 
 function doRedirect() {
   overlay.classList.remove("active");
-  if (redirectUrl) window.open(redirectUrl, "_blank", "noopener");
+  if (redirectUrl) window.open(redirectUrl, "_blank", "noopener,noreferrer");
   redirectUrl = null;
 }
 
@@ -142,3 +148,13 @@ cancelBtn.addEventListener("click", () => {
   overlay.classList.remove("active");
   redirectUrl = null;
 });
+
+/* ── Escape helpers (prevent XSS from user-supplied URLs) ── */
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function escapeAttr(str) {
+  return str.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
